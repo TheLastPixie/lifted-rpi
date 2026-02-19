@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lifted-rpi"
+version = "0.1.0"
+description = "GPU-accelerated lifted robust positively invariant (RPI) set computation for state-dependent disturbances"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Abdelrahman Ramadan" },
+    { name = "Sidney Givigi" },
+]
+
+[project.urls]
+Paper = "https://ieeexplore.ieee.org/document/11278656"
+DOI = "https://doi.org/10.1109/LCSYS.2025.3641128"
+Repository = "https://github.com/TheLastPixie/lifted-rpi"
+
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.8",
+    "matplotlib>=3.5",
+    "plotly>=5.10",
+    "scikit-learn>=1.1",
+    "joblib>=1.1",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "jax[cuda12]>=0.4",
+    "cupy-cuda12x>=12.0",
+]
+simulation = [
+    "pytope",
+]
+all = [
+    "lifted-rpi[gpu,simulation]",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lifted_rpi"]
