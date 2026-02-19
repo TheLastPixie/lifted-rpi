@@ -48,6 +48,10 @@ lifted-rpi/
         ├── iteration.py            # Fixed-point iterator (outside-in)
         ├── initialization.py       # Z0, W, DeltaV construction helpers
         ├── simulation.py           # MPC simulation, epsilon-MRPI, trajectory gen
+        ├── speedup/                # Surrogate-accelerated GP clipping (32x speedup)
+        │   ├── __init__.py
+        │   ├── surrogate.py        # SurrogateGraphSet, Nystroem & Poly builders
+        │   └── README.md           # Detailed problem description & benchmarks
         └── plotting/
             ├── __init__.py
             ├── publication.py      # IEEE-style matplotlib figures
@@ -291,6 +295,15 @@ If you use this code in your research, please cite:
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+## Disclaimer
+
+This codebase implements a **frozen, single-epoch** computation pipeline:
+the GP disturbance model is trained once from a fixed MPC trajectory,
+and the RPI fixed-point iteration runs to convergence against that
+static model.  Fully online learning, where the GP is retrained during
+operation and the RPI set is updated incrementally, is planned for a
+future release.
 
 ## Acknowledgments
 

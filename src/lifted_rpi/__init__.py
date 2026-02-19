@@ -44,6 +44,7 @@ from .simulation import (
     eps_MRPI, generate_trajectory, simulate_trajectory_with_realistic_drag,
     test_realistic_drag,
 )
+from .speedup import SurrogateGraphSet, build_nystroem_surrogate, build_poly_surrogate
 
 __all__ = [
     # core geometry
@@ -64,4 +65,6 @@ __all__ = [
     # simulation
     "eps_MRPI", "generate_trajectory", "simulate_trajectory_with_realistic_drag",
     "test_realistic_drag",
+    # speedup / surrogates
+    "SurrogateGraphSet", "build_nystroem_surrogate", "build_poly_surrogate",
 ]

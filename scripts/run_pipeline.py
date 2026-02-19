@@ -284,6 +284,10 @@ def main():
                         help="Patience for convergence (default: 3)")
     parser.add_argument("--save-dir", type=str, default="results")
     parser.add_argument("--no-gpu-clip", action="store_true")
+    parser.add_argument("--surrogate", choices=["nystroem", "poly", "none"],
+                        default="none",
+                        help="Surrogate backend for GP clipping speedup "
+                             "(default: none = raw GP)")
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok=True)
@@ -317,6 +321,13 @@ def main():
             G, sim_data = build_gp_learned_graphset(save_dir=args.save_dir)
     else:
         G = build_drag_graphset()
+    # -- 2b. Optional surrogate wrapper --
+    if args.surrogate != "none" and args.graphset == "gp_learned":
+        from lifted_rpi.speedup import SurrogateGraphSet
+        print(f"\nWrapping GP in SurrogateGraphSet (backend={args.surrogate})")
+        G = SurrogateGraphSet(G, backend=args.surrogate, verbose=True)
+        print(f"  Surrogate build time: {G.build_time:.3f}s")
+
     print(f"\nGraphSet: {G.name}, tol={G.tol}")
 
     # -- 3. Operating region: xv_box = +/-0.5 --
