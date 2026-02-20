@@ -104,21 +104,22 @@ def _save(fig, save_dir, name, pad_inches=0.03):
     print(f"  {name}.{{pdf,png}}")
 
 
-def _save_3d(fig, save_dir, name):
-    """Save a 3-D figure whose layout prevents z-label clipping.
+def _save_3d(fig, save_dir, name, pad_inches=0.03):
+    """Save a 3-D figure with z-axis labels intact.
 
-    Standard matplotlib ``bbox_inches='tight'`` can miss z-axis labels
-    on 3-D axes when they lie *outside* the figure canvas (e.g. when
-    ``subplots_adjust`` uses zero margins).  Callers must leave at least
-    ~2 % margin on every side via ``subplots_adjust`` so that the
-    tight-bbox renderer can detect all label elements.
+    matplotlib's ``bbox_inches='tight'`` ignores z-axis labels and tick
+    labels when computing the bounding box for ``Axes3D`` (a known bug
+    in matplotlib ≤ 3.9).  With the global ``savefig.pad_inches = 0.03``
+    the z-label is completely cropped out of the saved image.
 
-    No explicit ``bbox_inches`` is passed here; the global
-    ``rcParams['savefig.bbox'] = 'tight'`` set by :func:`apply_ieee_style`
-    provides the crop-and-expand behaviour automatically.
+    This helper bypasses tight-bbox entirely for 3-D figures by saving
+    at the native figure canvas size.  Callers should use
+    ``fig.subplots_adjust()`` to leave adequate margins for labels.
     """
-    for ext in ("pdf", "png"):
-        fig.savefig(os.path.join(save_dir, f"{name}.{ext}"), dpi=300)
+    import matplotlib as mpl
+    with mpl.rc_context({"savefig.bbox": "standard"}):
+        for ext in ("pdf", "png"):
+            fig.savefig(os.path.join(save_dir, f"{name}.{ext}"), dpi=300)
     print(f"  {name}.{{pdf,png}}")
 
 
@@ -402,7 +403,7 @@ def plot_3d_set_comparison(data, K, n, m, w, save_dir, pfx="fig"):
         ax.view_init(elev=elev, azim=azim)
         ax.legend(loc="upper right", framealpha=0.92)
         ax.set_box_aspect([1, 1, zasp])
-        fig.subplots_adjust(left=0.02, right=0.96, bottom=0.02, top=0.96)
+        fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
         _save_3d(fig, save_dir, f"{pfx}_3d_{tag}")
         plt.close(fig)
 
@@ -472,7 +473,7 @@ def plot_convergence_evolution_3d(data, K, n, m, w, save_dir, pfx="fig"):
         ax.set_zlabel(_tok_label(tc), labelpad=12)
         ax.legend(loc="upper right", framealpha=0.92)
         ax.view_init(elev=22, azim=42)
-        fig.subplots_adjust(left=0.02, right=0.96, bottom=0.02, top=0.96)
+        fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
         _save_3d(fig, save_dir, f"{pfx}_conv_{ta}_{tb}_{tc}")
         plt.close(fig)
 
@@ -685,13 +686,14 @@ def plot_accel_dist_3d(data, K, n, m, w, save_dir, pfx="fig",
         ax.set_ylabel(_tok_label(yt), labelpad=10)
         ax.set_zlabel(_tok_label(zt), labelpad=12)
         ax.tick_params(labelsize=6)
+        ax.view_init(elev=25, azim=225)
 
         cbar = plt.colorbar(sc, ax=ax, shrink=0.5, pad=0.08)
         sigma_sym = r"$\sigma_x$" if "x" in zt else r"$\sigma_y$"
         cbar.set_label(f"Uncertainty {sigma_sym}", fontsize=8)
         cbar.ax.tick_params(labelsize=6)
 
-        fig.subplots_adjust(left=0.0, right=0.92, bottom=0.02, top=0.96)
+        fig.subplots_adjust(left=0.08, right=0.90, bottom=0.08, top=0.95)
         _save_3d(fig, save_dir, f"{pfx}_3d_gp_{tag}")
         plt.close(fig)
 
