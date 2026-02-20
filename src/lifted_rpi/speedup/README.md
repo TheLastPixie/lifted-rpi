@@ -311,12 +311,19 @@ the baseline GP on the double-integrator problem.*
 
 **Empirical verification:**
 
+The baseline ran with `patience=3, tol=3e-2` (57 iterations) while the
+surrogate uses stricter `patience=5, tol=2.5e-2` (59 iterations). The
+Hausdorff trajectory is bitwise identical for all 57 shared iterations;
+the surrogate simply continues 2 more iterations under the stricter
+criterion.
+
 | Metric | Baseline (raw GP) | Nystroem surrogate |
 |--------|-------------------|--------------------|
 | $Z^*$ vertex count | 50,000 | 50,000 |
 | AABB min/max difference | -- | 0.000 |
-| Final Hausdorff distance | $1.724 \times 10^{-2}$ | $1.724 \times 10^{-2}$ (bitwise) |
-| Hausdorff trajectory match | -- | Identical at all 57/59 iterations |
+| Hausdorff at iter 57 | $1.724 \times 10^{-2}$ | $1.724 \times 10^{-2}$ (bitwise) |
+| Hausdorff first 57 iters | -- | Bitwise identical to baseline |
+| $Z^*$ (CPU vs GPU) | -- | Exact match (`np.array_equal`) |
 
 **Note.** This proof relies on the domain mismatch being total (100% far).
 If future problems have partial overlap, the surrogate will produce

@@ -104,6 +104,24 @@ def _save(fig, save_dir, name, pad_inches=0.03):
     print(f"  {name}.{{pdf,png}}")
 
 
+def _save_3d(fig, save_dir, name):
+    """Save a 3-D figure whose layout prevents z-label clipping.
+
+    Standard matplotlib ``bbox_inches='tight'`` can miss z-axis labels
+    on 3-D axes when they lie *outside* the figure canvas (e.g. when
+    ``subplots_adjust`` uses zero margins).  Callers must leave at least
+    ~2 % margin on every side via ``subplots_adjust`` so that the
+    tight-bbox renderer can detect all label elements.
+
+    No explicit ``bbox_inches`` is passed here; the global
+    ``rcParams['savefig.bbox'] = 'tight'`` set by :func:`apply_ieee_style`
+    provides the crop-and-expand behaviour automatically.
+    """
+    for ext in ("pdf", "png"):
+        fig.savefig(os.path.join(save_dir, f"{name}.{ext}"), dpi=300)
+    print(f"  {name}.{{pdf,png}}")
+
+
 def _hull_3d(ax, pts, color, alpha=0.30, label=None, edge_color=None):
     """Trisurf mesh from ConvexHull (joggled, triangle-faceted)."""
     from scipy.spatial import ConvexHull
@@ -365,7 +383,7 @@ def plot_3d_set_comparison(data, K, n, m, w, save_dir, pfx="fig"):
     ]
 
     for tx, ty, tz, elev, azim, zasp, tag in triplets_3d:
-        fig = plt.figure(figsize=(4.2, 3.6))
+        fig = plt.figure(figsize=(5.2, 4.4))
         ax  = fig.add_subplot(111, projection="3d")
 
         def _pts(cols):
@@ -384,8 +402,8 @@ def plot_3d_set_comparison(data, K, n, m, w, save_dir, pfx="fig"):
         ax.view_init(elev=elev, azim=azim)
         ax.legend(loc="upper right", framealpha=0.92)
         ax.set_box_aspect([1, 1, zasp])
-        fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
-        _save(fig, save_dir, f"{pfx}_3d_{tag}", pad_inches=0.15)
+        fig.subplots_adjust(left=0.02, right=0.96, bottom=0.02, top=0.96)
+        _save_3d(fig, save_dir, f"{pfx}_3d_{tag}")
         plt.close(fig)
 
 
@@ -426,7 +444,7 @@ def plot_convergence_evolution_3d(data, K, n, m, w, save_dir, pfx="fig"):
     ]
 
     for ta, tb, tc in triplets:
-        fig = plt.figure(figsize=(4.6, 3.8))
+        fig = plt.figure(figsize=(5.4, 4.5))
         ax  = fig.add_subplot(111, projection="3d")
 
         # G background
@@ -454,8 +472,8 @@ def plot_convergence_evolution_3d(data, K, n, m, w, save_dir, pfx="fig"):
         ax.set_zlabel(_tok_label(tc), labelpad=12)
         ax.legend(loc="upper right", framealpha=0.92)
         ax.view_init(elev=22, azim=42)
-        fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
-        _save(fig, save_dir, f"{pfx}_conv_{ta}_{tb}_{tc}", pad_inches=0.15)
+        fig.subplots_adjust(left=0.02, right=0.96, bottom=0.02, top=0.96)
+        _save_3d(fig, save_dir, f"{pfx}_conv_{ta}_{tb}_{tc}")
         plt.close(fig)
 
 
@@ -673,8 +691,8 @@ def plot_accel_dist_3d(data, K, n, m, w, save_dir, pfx="fig",
         cbar.set_label(f"Uncertainty {sigma_sym}", fontsize=8)
         cbar.ax.tick_params(labelsize=6)
 
-        plt.tight_layout()
-        _save(fig, save_dir, f"{pfx}_3d_gp_{tag}", pad_inches=0.15)
+        fig.subplots_adjust(left=0.0, right=0.92, bottom=0.02, top=0.96)
+        _save_3d(fig, save_dir, f"{pfx}_3d_gp_{tag}")
         plt.close(fig)
 
 
