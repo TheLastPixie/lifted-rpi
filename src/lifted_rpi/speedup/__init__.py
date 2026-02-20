@@ -29,9 +29,33 @@ from .surrogate import (
     build_nystroem_surrogate,
     build_poly_surrogate,
 )
+from . import gpu_ops
+
+
+def init_gpu(verbose: bool = True) -> bool:
+    """Initialise GPU acceleration for the entire pipeline.
+
+    Calls ``gpu_ops.init()`` and, if successful, hooks the GPU
+    ``unique_rows`` function into ``VSet.__post_init__`` and the
+    engine's Minkowski dedup path so that all subsequent VSet
+    and Minkowski operations use the GPU automatically.
+
+    Returns True if GPU is ready.
+    """
+    ok = gpu_ops.init(verbose=verbose)
+    if ok:
+        # Hook GPU unique into VSet and engine
+        from ..vset import set_gpu_unique
+        from .. import engine as _eng
+        set_gpu_unique(gpu_ops.unique_rows)
+        _eng._gpu_unique_rows = gpu_ops.unique_rows
+    return ok
+
 
 __all__ = [
     "SurrogateGraphSet",
     "build_nystroem_surrogate",
     "build_poly_surrogate",
+    "gpu_ops",
+    "init_gpu",
 ]

@@ -31,6 +31,9 @@ try:
 except ImportError:
     cp = None
 
+# Optional GPU-accelerated unique (populated by gpu_ops.init)
+_gpu_unique_rows = None
+
 from .polytope import Polytope
 from .minkowski_gpu import MinkowskiGPU
 from .vset import (
@@ -252,7 +255,10 @@ class LiftedSetOpsGPU_NoHull:
             else:
                 big = np.concatenate([np.asarray(k) for k in kept_batches], axis=0)
 
-            big = np.unique(big, axis=0)
+            if _gpu_unique_rows is not None:
+                big = _gpu_unique_rows(big)
+            else:
+                big = np.unique(big, axis=0)
             big = downsample_cloud(
                 big, max_points=self.downsample_max_points,
                 method=self.downsample_method,

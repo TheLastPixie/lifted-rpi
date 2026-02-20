@@ -288,9 +288,19 @@ def main():
                         default="none",
                         help="Surrogate backend for GP clipping speedup "
                              "(default: none = raw GP)")
+    parser.add_argument("--gpu", action="store_true",
+                        help="Enable GPU acceleration (PyTorch CUDA) for "
+                             "unique-rows, KNN, Nystroem, etc.")
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok=True)
+
+    # -- 0. GPU acceleration (optional) --
+    if args.gpu:
+        from lifted_rpi.speedup import init_gpu
+        gpu_ok = init_gpu(verbose=True)
+        if not gpu_ok:
+            print("WARNING: --gpu requested but CUDA unavailable; continuing on CPU")
 
     # -- 1. System matrices --
     print("=" * 60)

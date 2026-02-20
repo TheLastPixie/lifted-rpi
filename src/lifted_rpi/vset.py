@@ -27,6 +27,14 @@ try:
 except ImportError:
     cp = None
 
+# Optional GPU-accelerated unique (set by gpu_ops.init())
+_gpu_unique_rows = None
+
+def set_gpu_unique(fn):
+    """Register a GPU unique_rows function (called by gpu_ops.init)."""
+    global _gpu_unique_rows
+    _gpu_unique_rows = fn
+
 
 # ----------------------------- V-set wrapper -----------------------------
 
@@ -50,7 +58,10 @@ class VSet:
         else:
             V_typed = V
 
-        V_processed = np.unique(V_typed, axis=0)
+        if _gpu_unique_rows is not None:
+            V_processed = _gpu_unique_rows(V_typed)
+        else:
+            V_processed = np.unique(V_typed, axis=0)
 
         if V_processed.size == 0:
             object.__setattr__(self, 'V', np.zeros((0, V.shape[1] if V.ndim > 1 else 0), dtype=self.dtype))

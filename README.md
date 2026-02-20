@@ -30,7 +30,9 @@ lifted-rpi/
 ├── .gitignore
 ├── scripts/
 │   ├── run_pipeline.py             # End-to-end pipeline (reproduces paper results)
-│   └── generate_figures.py         # Publication-quality figure generator
+│   ├── generate_figures.py         # Publication-quality figure generator
+│   ├── generate_speedup_figure.py  # Baseline vs surrogate comparison
+│   └── generate_cpu_vs_gpu_figure.py  # CPU vs GPU comparison
 ├── results/
 │   ├── G_learned.joblib            # Pre-trained GP disturbance model
 │   ├── pipeline_paper_exact.npz    # Saved Z*, metrics, timing
@@ -48,10 +50,11 @@ lifted-rpi/
         ├── iteration.py            # Fixed-point iterator (outside-in)
         ├── initialization.py       # Z0, W, DeltaV construction helpers
         ├── simulation.py           # MPC simulation, epsilon-MRPI, trajectory gen
-        ├── speedup/                # Surrogate-accelerated GP clipping (32x speedup)
+        ├── speedup/                # Surrogate + GPU acceleration (228x speedup)
         │   ├── __init__.py
         │   ├── surrogate.py        # SurrogateGraphSet, Nystroem & Poly builders
-        │   └── README.md           # Detailed problem description & benchmarks
+        │   ├── gpu_ops.py          # PyTorch CUDA: unique, knn, nystroem, hausdorff
+        │   └── README.md           # Mathematical analysis & benchmarks
         └── plotting/
             ├── __init__.py
             ├── publication.py      # IEEE-style matplotlib figures
@@ -111,35 +114,40 @@ pip install git+https://github.com/haudren/pytope.git
 
 ## Results
 
-The pipeline converges in **57 iterations** (~16 min on CPU, ~2 min with CUDA 12 GPU) producing robust positively invariant sets for the 2D double-integrator system with state-dependent drag disturbance.
+The pipeline converges in **59 iterations** producing robust positively invariant sets for the 2D double-integrator system with state-dependent drag disturbance. Three acceleration tiers are available:
+
+| Mode | Total time | Per-iteration | Frequency | Speedup |
+|------|-----------|---------------|-----------|---------|
+| Baseline (raw GP) | 979.2 s | 17.2 s | 0.06 Hz | 1x |
+| CPU Surrogate (Nystroem) | 42.7 s | 0.72 s | 1.4 Hz | 23x |
+| GPU Surrogate (RTX 4070S) | 4.3 s | 0.073 s | **13.8 Hz** | **228x** |
 
 ### Convergence
 
 <p align="center">
   <img src="results/figures/fig_hausdorff.png" width="48%" alt="Hausdorff convergence"/>
-  <img src="results/figures/fig_timing.png" width="48%" alt="Per-iteration timing"/>
+  <img src="results/figures/fig_volume.png" width="48%" alt="Normalised volume"/>
 </p>
 
-Left: normalised Hausdorff distance between successive iterates (tolerance 3e-2, patience 3). Right: cumulative wall-clock time per iteration.
+Left: normalised Hausdorff distance between successive iterates (tolerance 2.5e-2, patience 5). Right: normalised AABB volume of the state projection across iterations.
 
-### RPI Set Projections (2D)
+### 3D Convergence Evolution
+
+The following figures show the outside-in convergence from the initial set Z0 through intermediate iterates to the fixed-point Z* for velocity, control and disturbance coordinates.
 
 <p align="center">
-  <img src="results/figures/fig_px_py.png" width="32%" alt="px-py"/>
-  <img src="results/figures/fig_px_vx.png" width="32%" alt="px-vx"/>
-  <img src="results/figures/fig_vx_vy.png" width="32%" alt="vx-vy"/>
+  <img src="results/figures/fig_conv_vx_ux_wx.png" width="48%" alt="Convergence vx-ux-wx"/>
+  <img src="results/figures/fig_conv_vy_uy_wy.png" width="48%" alt="Convergence vy-uy-wy"/>
 </p>
 
-2D projections of the converged RPI set Z* onto state subspaces: position (px, py), phase (px, vx), and velocity (vx, vy).
-
-### 3D Hull Comparisons
+### 3D Set Comparisons (G vs Z0 vs Z*)
 
 <p align="center">
-  <img src="results/figures/fig_3d_px_py_vx.png" width="48%" alt="3D px-py-vx"/>
-  <img src="results/figures/fig_3d_px_vx_ux.png" width="48%" alt="3D px-vx-ux"/>
+  <img src="results/figures/fig_3d_vx_vy_wx.png" width="48%" alt="3D vx-vy-wx"/>
+  <img src="results/figures/fig_3d_py_vy_wy.png" width="48%" alt="3D py-vy-wy"/>
 </p>
 
-3D convex-hull views of the initial set Z0 (blue) versus the converged set Z* (orange) in lifted-space coordinates.
+3D convex-hull views of the graph set G, initial set Z0 and converged set Z* in velocity-control-disturbance coordinates.
 
 ### GP-Learned Disturbance Analysis
 
@@ -156,6 +164,22 @@ Left: normalised Hausdorff distance between successive iterates (tolerance 3e-2,
 
 Top: 3D scatter of MPC simulation trajectories with GP mean surface and 95% confidence bounds. Bottom: 2D contourf heatmaps of predicted disturbance and uncertainty.
 
+### Acceleration: Baseline vs Surrogate
+
+<p align="center">
+  <img src="results/figures/fig_baseline_vs_surrogate.png" width="90%" alt="Baseline vs Surrogate"/>
+</p>
+
+The raw GP clipping (baseline) spends 98.6% of wall-clock time inside `sklearn.GaussianProcessRegressor.predict`, computing 50k x 2500 pairwise kernel matrices that are ultimately a no-op (100% of points fall back to the prior box). The Nystroem surrogate replaces this with a 200-component RBF approximation fitted in < 1 s, yielding a **23x total speedup** with bitwise-identical output. See [`src/lifted_rpi/speedup/README.md`](src/lifted_rpi/speedup/README.md) for the full mathematical analysis.
+
+### Acceleration: CPU vs GPU
+
+<p align="center">
+  <img src="results/figures/fig_cpu_vs_gpu.png" width="90%" alt="CPU vs GPU"/>
+</p>
+
+GPU acceleration (PyTorch CUDA) replaces NumPy `unique`, SciPy `KDTree` and Nystroem transform with batched `torch.cdist` and `torch.unique` on GPU, achieving a further **10x speedup** over the CPU surrogate (13.8 Hz vs 1.4 Hz).
+
 ### Reproducing These Figures
 
 ```bash
@@ -163,8 +187,12 @@ Top: 3D scatter of MPC simulation trajectories with GP mean surface and 95% conf
 python scripts/generate_figures.py --save-dir results/figures
 
 # Option 2: Re-run the full pipeline from scratch, then generate figures
-python scripts/run_pipeline.py
+python scripts/run_pipeline.py --surrogate nystroem
 python scripts/generate_figures.py --save-dir results/figures
+
+# Generate comparison figures
+python scripts/generate_speedup_figure.py       # baseline vs surrogate
+python scripts/generate_cpu_vs_gpu_figure.py     # CPU vs GPU
 ```
 
 All figures are saved as both PDF (publication) and PNG (preview) in `results/figures/`.

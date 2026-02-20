@@ -39,6 +39,8 @@ from sklearn.kernel_approximation import Nystroem
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
+from . import gpu_ops
+
 
 # ────────────────────── helper: batched GP predict ──────────────────────
 
@@ -315,20 +317,52 @@ class SurrogateGraphSet:
           1. Minimum half-width floor.
           2. Far-fallback to prior box for OOD queries.
           3. Clamp to prior box.
+
+        When GPU ops are available (``gpu_ops.is_available()``), the
+        KDTree far-check and Nystroem transform + Ridge predict are
+        executed entirely on GPU, avoiding multiple CPU round-trips.
         """
         F = self._features(X, U, t_index=t_index)
 
-        # KDTree distance check (fast: O(N log N_train))
-        d, _ = self.kdt.query(F, k=1, return_distance=True)
-        d = d.ravel()
+        # --- KDTree distance check ---
+        d_gpu = gpu_ops.knn_distances(F, np.asarray(self.kdt.data))
+        if d_gpu is not None:
+            d = d_gpu.ravel()
+        else:
+            d, _ = self.kdt.query(F, k=1, return_distance=True)
+            d = d.ravel()
 
-        # Surrogate prediction
+        # --- Surrogate prediction ---
         if self._surr["backend"] == "nystroem":
-            Phi = self._surr["nys"].transform(F)
-            mu_x = self._surr["ridge_mu_x"].predict(Phi)
-            mu_y = self._surr["ridge_mu_y"].predict(Phi)
-            std_x = np.maximum(self._surr["ridge_std_x"].predict(Phi), 0.0)
-            std_y = np.maximum(self._surr["ridge_std_y"].predict(Phi), 0.0)
+            # Try GPU path first
+            gpu_result = gpu_ops.nystroem_predict(
+                F,
+                components=self._surr["nys"].components_,
+                normalization=self._surr["nys"].normalization_,
+                gamma=self._surr["nys"].gamma,
+                coefs=[
+                    self._surr["ridge_mu_x"].coef_.ravel(),
+                    self._surr["ridge_mu_y"].coef_.ravel(),
+                    self._surr["ridge_std_x"].coef_.ravel(),
+                    self._surr["ridge_std_y"].coef_.ravel(),
+                ],
+                intercepts=[
+                    float(self._surr["ridge_mu_x"].intercept_),
+                    float(self._surr["ridge_mu_y"].intercept_),
+                    float(self._surr["ridge_std_x"].intercept_),
+                    float(self._surr["ridge_std_y"].intercept_),
+                ],
+            )
+            if gpu_result is not None:
+                mu_x, mu_y, std_x, std_y = gpu_result
+                std_x = np.maximum(std_x, 0.0)
+                std_y = np.maximum(std_y, 0.0)
+            else:
+                Phi = self._surr["nys"].transform(F)
+                mu_x = self._surr["ridge_mu_x"].predict(Phi)
+                mu_y = self._surr["ridge_mu_y"].predict(Phi)
+                std_x = np.maximum(self._surr["ridge_std_x"].predict(Phi), 0.0)
+                std_y = np.maximum(self._surr["ridge_std_y"].predict(Phi), 0.0)
         else:  # poly
             F_sc = self._surr["scaler"].transform(F)
             Phi = self._surr["poly"].transform(F_sc)

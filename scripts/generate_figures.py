@@ -96,11 +96,11 @@ def apply_ieee_style(use_tex: bool = True):
 # Plotting helpers
 # ═══════════════════════════════════════════════════════════════════════
 
-def _save(fig, save_dir, name):
+def _save(fig, save_dir, name, pad_inches=0.03):
     """Save a figure as both PDF and PNG."""
     for ext in ("pdf", "png"):
         fig.savefig(os.path.join(save_dir, f"{name}.{ext}"),
-                    dpi=300, bbox_inches="tight", pad_inches=0.03)
+                    dpi=300, bbox_inches="tight", pad_inches=pad_inches)
     print(f"  {name}.{{pdf,png}}")
 
 
@@ -378,14 +378,14 @@ def plot_3d_set_comparison(data, K, n, m, w, save_dir, pfx="fig"):
         _hull_3d(ax, _pts(cols_Zs), _COLOR_ZSTAR, alpha=0.35,
                  label=r"$Z^*$", edge_color=_COLOR_ZSTAR)
 
-        ax.set_xlabel(_tok_label(tx), labelpad=8)
-        ax.set_ylabel(_tok_label(ty), labelpad=8)
-        ax.set_zlabel(_tok_label(tz), labelpad=8)
+        ax.set_xlabel(_tok_label(tx), labelpad=10)
+        ax.set_ylabel(_tok_label(ty), labelpad=10)
+        ax.set_zlabel(_tok_label(tz), labelpad=12)
         ax.view_init(elev=elev, azim=azim)
         ax.legend(loc="upper right", framealpha=0.92)
         ax.set_box_aspect([1, 1, zasp])
-        plt.tight_layout()
-        _save(fig, save_dir, f"{pfx}_3d_{tag}")
+        fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+        _save(fig, save_dir, f"{pfx}_3d_{tag}", pad_inches=0.15)
         plt.close(fig)
 
 
@@ -449,13 +449,13 @@ def plot_convergence_evolution_3d(data, K, n, m, w, save_dir, pfx="fig"):
         _hull_3d(ax, Ps, _COLOR_ZSTAR, alpha=0.80,
                  label=r"$Z^*$", edge_color=_COLOR_ZSTAR)
 
-        ax.set_xlabel(_tok_label(ta), labelpad=8)
-        ax.set_ylabel(_tok_label(tb), labelpad=8)
-        ax.set_zlabel(_tok_label(tc), labelpad=8)
+        ax.set_xlabel(_tok_label(ta), labelpad=10)
+        ax.set_ylabel(_tok_label(tb), labelpad=10)
+        ax.set_zlabel(_tok_label(tc), labelpad=12)
         ax.legend(loc="upper right", framealpha=0.92)
         ax.view_init(elev=22, azim=42)
-        plt.tight_layout()
-        _save(fig, save_dir, f"{pfx}_conv_{ta}_{tb}_{tc}")
+        fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+        _save(fig, save_dir, f"{pfx}_conv_{ta}_{tb}_{tc}", pad_inches=0.15)
         plt.close(fig)
 
 
@@ -663,9 +663,9 @@ def plot_accel_dist_3d(data, K, n, m, w, save_dir, pfx="fig",
         ax.plot_surface(XG, YG, Z_upper, alpha=0.15, color="orange")
         ax.plot_surface(XG, YG, Z_lower, alpha=0.15, color="orange")
 
-        ax.set_xlabel(_tok_label(xt), labelpad=6)
-        ax.set_ylabel(_tok_label(yt), labelpad=6)
-        ax.set_zlabel(_tok_label(zt), labelpad=6)
+        ax.set_xlabel(_tok_label(xt), labelpad=10)
+        ax.set_ylabel(_tok_label(yt), labelpad=10)
+        ax.set_zlabel(_tok_label(zt), labelpad=12)
         ax.tick_params(labelsize=6)
 
         cbar = plt.colorbar(sc, ax=ax, shrink=0.5, pad=0.08)
@@ -674,7 +674,7 @@ def plot_accel_dist_3d(data, K, n, m, w, save_dir, pfx="fig",
         cbar.ax.tick_params(labelsize=6)
 
         plt.tight_layout()
-        _save(fig, save_dir, f"{pfx}_3d_gp_{tag}")
+        _save(fig, save_dir, f"{pfx}_3d_gp_{tag}", pad_inches=0.15)
         plt.close(fig)
 
 
