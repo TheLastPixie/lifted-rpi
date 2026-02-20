@@ -201,7 +201,7 @@ def plot_convergence_metrics(data, save_dir, pfx="fig"):
 
     haus = data.get("hausdorff", np.array([]))
     vols = data.get("volumes_state_norm", np.array([]))
-    tol = 3e-2
+    tol = 2.5e-2
 
     if haus.size > 0:
         fig, ax = plt.subplots(figsize=(3.5, 2.4))
