@@ -384,7 +384,7 @@ def plot_3d_set_comparison(data, K, n, m, w, save_dir, pfx="fig"):
     ]
 
     for tx, ty, tz, elev, azim, zasp, tag in triplets_3d:
-        fig = plt.figure(figsize=(5.2, 4.4))
+        fig = plt.figure(figsize=(6.2, 4.4))
         ax  = fig.add_subplot(111, projection="3d")
 
         def _pts(cols):
@@ -445,7 +445,7 @@ def plot_convergence_evolution_3d(data, K, n, m, w, save_dir, pfx="fig"):
     ]
 
     for ta, tb, tc in triplets:
-        fig = plt.figure(figsize=(5.4, 4.5))
+        fig = plt.figure(figsize=(6.4, 4.5))
         ax  = fig.add_subplot(111, projection="3d")
 
         # G background
@@ -663,7 +663,7 @@ def plot_accel_dist_3d(data, K, n, m, w, save_dir, pfx="fig",
     ]
 
     for xd, yd, zd, cd, w_pred, sig, xt, yt, zt, cmap, tag in panels:
-        fig = plt.figure(figsize=(10, 8))
+        fig = plt.figure(figsize=(11, 8))
         ax = fig.add_subplot(111, projection="3d")
 
         sc = ax.scatter(xd, yd, zd, c=cd, cmap=cmap, s=20, alpha=0.7)
