@@ -3,6 +3,7 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GPU: CUDA](https://img.shields.io/badge/GPU-CUDA%2012-orange.svg)](https://developer.nvidia.com/cuda-toolkit)
+[![Paper](https://img.shields.io/badge/IEEE%20CSL-10.1109%2FLCSYS.2025.3641128-blue)](https://doi.org/10.1109/LCSYS.2025.3641128)
 
 Official implementation of the paper:
 
